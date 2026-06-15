@@ -1,13 +1,13 @@
 # Debt & Loan Management System
 
-A complete enterprise-grade web application for managing customer loans, repayments, debt tracking, and automated SMS reminders.
+A complete enterprise-grade web application for managing customer loans, repayments, debt tracking, and automated SMS reminders via the Meseji API.
 
 ## Technology Stack
 
 - **Backend:** Laravel 12, PHP 8.2+, MySQL 8+
-- **Frontend:** Blade Templates, Bootstrap 5, AdminLTE Dashboard
-- **Authentication:** Laravel Breeze + Sanctum
-- **SMS:** Twilio & Africa's Talking
+- **Frontend:** Blade Templates, Bootstrap 5, AdminLTE 3 Dashboard
+- **Authentication:** Laravel Breeze (session) + Sanctum (API tokens)
+- **SMS:** Meseji API (https://meseji.co.tz)
 - **Exports:** Laravel Excel (XLSX), DomPDF (PDF)
 - **Queue:** Laravel Queue (Database driver)
 - **Scheduler:** Laravel Scheduler
@@ -53,18 +53,10 @@ DB_PASSWORD=
 php artisan migrate --seed
 ```
 
-### 5. Configure SMS (Optional)
-Add to `.env`:
-```env
-# Twilio
-TWILIO_SID=your_twilio_sid
-TWILIO_TOKEN=your_twilio_token
-TWILIO_FROM=+1234567890
-
-# OR Africa's Talking
-AFRICASTALKING_USERNAME=your_username
-AFRICASTALKING_API_KEY=your_api_key
-```
+### 5. Configure SMS (Optional - via Web UI)
+After login, go to **Settings → SMS Settings** and configure:
+- **Meseji API Key**
+- **Meseji Sender ID**
 
 ### 6. Start Development Server
 ```bash
@@ -96,27 +88,31 @@ Add to crontab:
 - **Staff:** Create loans, record payments, view customers, send SMS
 
 ### Core Modules
-1. **Dashboard** - Real-time statistics with charts
-2. **Customer Management** - CRUD with search and loan history
-3. **Loan Management** - Create/edit loans with auto status updates
-4. **Payment Management** - Record payments with receipt printing
-5. **SMS Notifications** - Auto-send on loan creation, payments, reminders
-6. **Reporting** - Daily/weekly/monthly collections with Excel/PDF export
-7. **User Management** - Admin-only user creation and role assignment
+1. **Dashboard** - Real-time statistics with charts (total debt, overdue count, recent activity, 6-day collections trend)
+2. **Customer Management** - CRUD with search, loan history view, PDF export
+3. **Loan Management** - Create/edit loans grouped by customer, auto status updates, PDF/Excel export, single loan PDF
+4. **Payment Management** - Smart payment allocation (oldest loans first), receipt printing, recalculation on edit/delete
+5. **SMS Notifications** - Auto-send via Meseji API on loan creation, payments, reminders; SMS log history
+6. **Reporting** - Daily/weekly/monthly collections with Excel and PDF export
+7. **User Management** - Admin-only user creation, editing, role assignment, activation/deactivation
+8. **Notifications** - In-app notification system with read/unread tracking
 
 ### SMS Triggers
-- New loan created → Customer receives notification
-- Payment recorded → Customer receives receipt
-- Due date → Automatic reminder SMS
-- Overdue → Automatic overdue SMS
-- Manual reminder → Send from loan details page
+- New loan created → Customer receives approval notification
+- Payment recorded → Customer receives payment receipt
+- Due date → Automatic reminder SMS (daily at 08:00)
+- Overdue → Automatic overdue SMS (daily at 00:00)
+- Manual reminder → Send from loan details or customer details page
 
 ### Background Jobs
-- **Every minute:** Process pending SMS queue
-- **Daily at 00:00:** Check and mark overdue loans
-- **Daily at 08:00:** Send due date reminders
+- **Every minute:** Process pending SMS queue (`ProcessSmsLogsJob`)
+- **Daily at 00:00:** Check and mark overdue loans, send overdue SMS
+- **Daily at 08:00:** Send due date reminder SMS
+- **Daily at 03:00:** Clean up old SMS logs (keep latest 10 per customer)
 
 ## API Endpoints
+
+All endpoints except `/api/login` require `Authorization: Bearer <token>` header.
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
@@ -128,6 +124,7 @@ Add to crontab:
 | GET/POST | /api/loans | List/Create loans (auth) |
 | GET/PUT/DELETE | /api/loans/{id} | CRUD loan (auth) |
 | GET/POST | /api/payments | List/Create payments (auth) |
+| GET/PUT/DELETE | /api/payments/{id} | CRUD payment (auth) |
 | GET | /api/reports/summary | Dashboard summary (auth) |
 | GET | /api/reports/collections | Collection report (auth) |
 
