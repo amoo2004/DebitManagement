@@ -33,6 +33,7 @@
                 <h2 class="card-title">Payment History</h2>
             </div>
             <div class="card-body p-0">
+                <div style="max-height: 400px; overflow-y: auto;">
                 <table class="table table-striped">
                     <thead><tr><th>#</th><th>Date</th><th>Loan Product</th><th>Amount</th><th>Method</th><th>Reference</th></tr></thead>
 <tbody>
@@ -57,6 +58,7 @@
     </tr>
 </tfoot>
                 </table>
+                </div>
             </div>
         </div>
         @else
@@ -65,6 +67,7 @@
                 <h2 class="card-title">Loan History</h2>
             </div>
             <div class="card-body p-0">
+                <div style="max-height: 400px; overflow-y: auto;">
                 <table class="table table-striped">
                     <thead><tr><th>#</th><th>Product</th><th>Amount</th><th>Paid</th><th>Remaining</th><th>Loan Date</th><th>Due Date</th></tr></thead>
 <tbody>
@@ -95,6 +98,7 @@
     @endforelse
 </tbody>
                 </table>
+                </div>
             </div>
         </div>
         @endif

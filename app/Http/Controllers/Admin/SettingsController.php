@@ -52,7 +52,7 @@ class SettingsController extends Controller
 
     public function users()
     {
-        $users = User::latest()->paginate(15);
+        $users = User::orderByRaw("FIELD(role, 'admin', 'staff')")->orderBy('id')->paginate(15);
         return view('admin.settings.users', compact('users'));
     }
 

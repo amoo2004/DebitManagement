@@ -28,17 +28,6 @@
         </ul>
         <ul class="navbar-nav ml-auto">
             <li class="nav-item dropdown">
-                <a class="nav-link" data-toggle="dropdown" href="#" aria-label="Notifications">
-                    <i class="far fa-bell"></i>
-                    <span class="badge badge-warning navbar-badge" id="notification-count">{{ auth()->user()->unreadNotifications()->count() }}</span>
-                </a>
-                <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
-                    <span class="dropdown-header text-center" id="notification-header">{{ auth()->user()->unreadNotifications()->count() }} Notifications</span>
-                    <div class="dropdown-divider"></div>
-                    <a href="{{ route('admin.notifications.index') }}" class="dropdown-item dropdown-footer">See All Notifications</a>
-                </div>
-            </li>
-            <li class="nav-item dropdown">
                 <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
                     <i class="fas fa-user"></i> {{ auth()->user()->name }}
                 </a>
@@ -88,7 +77,12 @@
                     @if(auth()->user()->isAdmin())
                     <li class="nav-header" role="separator">ADMIN</li>
                     <li class="nav-item">
-                        <a href="{{ route('admin.settings.sms') }}" class="nav-link {{ request()->routeIs('admin.settings.*') ? 'active' : '' }}">
+                        <a href="{{ route('admin.settings.users') }}" class="nav-link {{ request()->routeIs('admin.settings.users*') ? 'active' : '' }}">
+                            <i class="nav-icon fas fa-users"></i><p>Staff</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="{{ route('admin.settings.sms') }}" class="nav-link {{ request()->routeIs('admin.settings.sms*') ? 'active' : '' }}">
                             <i class="nav-icon fas fa-cogs"></i><p>Settings</p>
                         </a>
                     </li>

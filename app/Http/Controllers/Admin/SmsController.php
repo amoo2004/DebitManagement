@@ -84,4 +84,33 @@ class SmsController extends Controller
 
         return back()->with('error', 'Reminder SMS failed. Check storage/logs/laravel.log for details.');
     }
+
+    public function sendCustomerReminder(Customer $customer)
+    {
+        $activeLoans = $customer->loans()->whereIn('status', ['pending', 'paying', 'overdue'])->get();
+
+        if ($activeLoans->isEmpty()) {
+            return back()->with('error', 'No active loans found for ' . $customer->full_name);
+        }
+
+        $totalDue = $activeLoans->sum('remaining_amount');
+        $loanDetails = $activeLoans->map(fn($l) => "TZS {$l->loan_amount} (due {$l->due_date->format('Y-m-d')})")->implode(', ');
+        $message = "Dear {$customer->full_name}, you have " . $activeLoans->count() . " active loan(s): {$loanDetails}. Total outstanding: TZS {$totalDue}. Please pay on time to avoid Discomfort. Thank you.";
+
+        $sent = $this->smsService->send($customer->phone, $message);
+
+        SmsLog::create([
+            'customer_id' => $customer->id,
+            'phone' => $customer->phone,
+            'message' => $message,
+            'status' => $sent ? 'sent' : 'failed',
+            'sent_at' => $sent ? now() : null,
+        ]);
+
+        if ($sent) {
+            return back()->with('success', 'Reminder sent to ' . $customer->phone);
+        }
+
+        return back()->with('error', 'Reminder SMS failed. Check storage/logs/laravel.log for details.');
+    }
 }

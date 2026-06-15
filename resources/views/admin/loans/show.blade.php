@@ -36,6 +36,7 @@
         <div class="card">
             <div class="card-header"><h2 class="card-title">Payment History</h2></div>
             <div class="card-body p-0">
+                <div style="max-height: 400px; overflow-y: auto;">
                 <table class="table table-striped">
                     <thead><tr><th>#</th><th>Amount</th><th>Date</th><th>Method</th><th>Reference</th><th>By</th></tr></thead>
                     <tbody>
@@ -60,6 +61,7 @@
                         </tr>
                     </tfoot>
                 </table>
+                </div>
             </div>
         </div>
     </div>

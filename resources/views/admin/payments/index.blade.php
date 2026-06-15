@@ -49,7 +49,7 @@
                         <td>{{ $payment->total_payments }}</td>
                         <td>{{ number_format($payment->total_amount, 2) }}</td>
                         <td>{{ \Carbon\Carbon::parse($payment->latest_payment_date)->format('d/m/y') }}</td>
-                        <td>
+                        <td style="white-space: nowrap;">
                             <a href="{{ route('admin.customers.show', ['customer' => $payment->customer_id, 'tab' => 'payments']) }}" class="btn btn-info btn-sm"><i class="fas fa-eye"></i></a>
                             <a href="{{ route('admin.payments.create') }}?customer_id={{ $payment->customer_id }}" class="btn btn-success btn-sm"><i class="fas fa-plus"></i></a>
                         </td>

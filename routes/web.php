@@ -33,6 +33,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::get('sms', [SmsController::class, 'index'])->name('sms.index');
     Route::post('sms/send-manual', [SmsController::class, 'sendManual'])->name('sms.send-manual');
     Route::post('loans/{loan}/send-reminder', [SmsController::class, 'sendReminder'])->name('loans.send-reminder');
+    Route::post('customers/{customer}/send-reminder', [SmsController::class, 'sendCustomerReminder'])->name('customers.send-reminder');
 
     Route::get('settings/sms', [SettingsController::class, 'smsSettings'])->name('settings.sms');
     Route::post('settings/sms', [SettingsController::class, 'updateSmsSettings'])->name('settings.sms.update');

@@ -36,9 +36,13 @@
                         <td>{{ number_format($loan->total_amount, 2) }}</td>
                         <td class="text-success">{{ number_format($loan->total_paid, 2) }}</td>
                         <td class="text-danger">{{ number_format($loan->total_remaining, 2) }}</td>
-                        <td>
+                        <td style="white-space: nowrap;">
                             <a href="{{ route('admin.customers.show', $loan->customer) }}" class="btn btn-info btn-sm"><i class="fas fa-eye"></i></a>
                             <a href="{{ route('admin.loans.create') }}?customer_id={{ $loan->customer_id }}" class="btn btn-success btn-sm"><i class="fas fa-plus"></i></a>
+                            <form action="{{ route('admin.customers.send-reminder', $loan->customer) }}" method="POST" style="display: inline;">
+                                @csrf
+                                <button type="submit" class="btn btn-info btn-sm"><i class="fas fa-sms"></i></button>
+                            </form>
                         </td>
                     </tr>
                     @empty

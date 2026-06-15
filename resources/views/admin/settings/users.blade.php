@@ -19,13 +19,13 @@
                 <tbody>
                     @forelse($users as $user)
                     <tr>
-                        <td>{{ $user->id }}</td>
+                        <td>{{ $loop->iteration }}</td>
                         <td>{{ $user->name }}</td>
                         <td>{{ $user->email }}</td>
                         <td>{{ $user->phone ?? 'N/A' }}</td>
                         <td><span class="badge bg-{{ $user->role == 'admin' ? 'danger' : 'info' }}">{{ ucfirst($user->role) }}</span></td>
                         <td><span class="badge bg-{{ $user->status ? 'success' : 'secondary' }}">{{ $user->status ? 'Active' : 'Inactive' }}</span></td>
-                        <td>
+                        <td style="white-space: nowrap;">
                             <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#editUserModal{{ $user->id }}"><i class="fas fa-edit"></i></button>
                             @if($user->id !== auth()->id())
                             <form action="{{ route('admin.settings.users.delete', $user) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete user?')">

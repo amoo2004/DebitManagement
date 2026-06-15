@@ -8,9 +8,6 @@
         <div class="small-box bg-info"><div class="inner"><h3>{{ $loanStats['total'] }}</h2><p>Total Loans</p></div><div class="icon"><i class="fas fa-file-invoice"></i></div></div>
     </div>
     <div class="col-md-3">
-        <div class="small-box bg-warning"><div class="inner"><h3>{{ $loanStats['active'] }}</h2><p>Active Loans</p></div><div class="icon"><i class="fas fa-spinner"></i></div></div>
-    </div>
-    <div class="col-md-3">
         <div class="small-box bg-danger"><div class="inner"><h3>{{ $loanStats['overdue'] }}</h2><p>Overdue</p></div><div class="icon"><i class="fas fa-exclamation-circle"></i></div></div>
     </div>
 </div>
