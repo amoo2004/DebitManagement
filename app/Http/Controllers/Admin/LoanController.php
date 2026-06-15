@@ -6,6 +6,7 @@ use App\Models\Customer;
 use App\Models\Loan;
 use App\Models\Payment;
 use App\Models\SmsLog;
+use App\Services\SmsService;
 use App\Exports\LoanExport;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
@@ -50,7 +51,7 @@ class LoanController extends Controller
         return view('admin.loans.create', compact('customers', 'selectedCustomer'));
     }
 
-    public function store(Request $request)
+    public function store(Request $request, SmsService $smsService)
     {
         $rules = [
             'product_name' => 'required|string|max:255',
@@ -74,7 +75,10 @@ class LoanController extends Controller
         $validated['status'] = 'pending';
         $validated['created_by'] = auth()->id();
 
-        DB::transaction(function () use ($request, &$validated) {
+        $sent = false;
+        $message = '';
+
+        DB::transaction(function () use ($request, &$validated, $smsService, &$sent, &$message) {
             if (!$request->filled('customer_id')) {
                 $customer = Customer::create([
                     'full_name' => $request->customer_name,
@@ -84,18 +88,28 @@ class LoanController extends Controller
             }
             $loan = Loan::create($validated);
             $customer = Customer::find($validated['customer_id']);
+            $totalDue = $customer->loans()->whereIn('status', ['pending', 'paying', 'overdue'])->sum('remaining_amount');
             $dueTime = $validated['due_time'] ?? '23:59';
-            $message = "You have received a loan of {$validated['loan_amount']}. Please repay before {$validated['due_date']} at {$dueTime}.";
+            $message = "Dear {$customer->full_name}, your loan of TZS {$validated['loan_amount']} has been approved. Outstanding balance: TZS {$totalDue}. Please repay before {$validated['due_date']} at {$dueTime}. Thank you.";
+
+            $sent = $smsService->send($customer->phone, $message);
+
             SmsLog::create([
                 'customer_id' => $customer->id,
                 'phone' => $customer->phone,
                 'message' => $message,
-                'status' => 'pending',
+                'status' => $sent ? 'sent' : 'failed',
+                'sent_at' => $sent ? now() : null,
             ]);
         });
 
+        if ($sent) {
+            return redirect()->route('admin.loans.index')
+                ->with('success', 'Loan created and SMS sent successfully.');
+        }
+
         return redirect()->route('admin.loans.index')
-            ->with('success', 'Loan created successfully.');
+            ->with('error', 'Loan created but SMS failed to send.');
     }
 
     public function show(Loan $loan)

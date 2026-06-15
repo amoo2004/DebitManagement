@@ -32,15 +32,6 @@ class DatabaseSeeder extends Seeder
             'status' => true,
         ]);
 
-        User::create([
-            'name' => 'Staff2',
-            'email' => 'staff2@example.com',
-            'phone' => '0712345673',
-            'password' => Hash::make('password'),
-            'role' => 'staff',
-            'status' => true,
-        ]);
-
         $customers = [
             ['full_name' => 'John Doe', 'phone' => '0722000001', 'address' => '123 Main St', 'national_id' => 'ID001'],
             ['full_name' => 'Jane Smith', 'phone' => '0722000002', 'address' => '456 Oak Ave', 'national_id' => 'ID002'],

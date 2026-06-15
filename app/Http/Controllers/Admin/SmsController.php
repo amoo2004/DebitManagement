@@ -43,34 +43,45 @@ class SmsController extends Controller
         ]);
 
         $customer = Customer::findOrFail($request->customer_id);
-        $this->smsService->send($customer->phone, $request->message);
+        $sent = $this->smsService->send($customer->phone, $request->message);
 
         SmsLog::create([
             'customer_id' => $customer->id,
             'phone' => $customer->phone,
             'message' => $request->message,
-            'status' => 'sent',
-            'sent_at' => now(),
+            'status' => $sent ? 'sent' : 'failed',
+            'sent_at' => $sent ? now() : null,
         ]);
 
-        return back()->with('success', 'SMS sent successfully.');
+        if ($sent) {
+            return back()->with('success', 'SMS sent successfully to ' . $customer->phone);
+        }
+
+        return back()->with('error', 'SMS failed to send. Check storage/logs/laravel.log for details.');
     }
 
     public function sendReminder(Loan $loan)
     {
         $customer = $loan->customer;
-        $message = "Reminder: Your remaining debt is {$loan->remaining_amount}. Please pay today.";
+        $totalDue = $customer->loans()->whereIn('status', ['pending', 'paying', 'overdue'])->sum('remaining_amount');
+        $dueDate = $loan->due_date->format('Y-m-d');
+        $dueTime = $loan->due_time ?? '23:59';
+        $message = "Dear {$customer->full_name}, your loan of TZS {$loan->loan_amount} is due on {$dueDate} at {$dueTime}. Total outstanding balance across all loans: TZS {$totalDue}. Please pay on time to avoid Discomfort. Thank you.";
 
-        $this->smsService->send($customer->phone, $message);
+        $sent = $this->smsService->send($customer->phone, $message);
 
         SmsLog::create([
             'customer_id' => $customer->id,
             'phone' => $customer->phone,
             'message' => $message,
-            'status' => 'sent',
-            'sent_at' => now(),
+            'status' => $sent ? 'sent' : 'failed',
+            'sent_at' => $sent ? now() : null,
         ]);
 
-        return back()->with('success', 'Reminder SMS sent successfully.');
+        if ($sent) {
+            return back()->with('success', 'Reminder sent to ' . $customer->phone);
+        }
+
+        return back()->with('error', 'Reminder SMS failed. Check storage/logs/laravel.log for details.');
     }
 }

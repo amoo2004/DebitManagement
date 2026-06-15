@@ -6,6 +6,7 @@ use App\Models\Customer;
 use App\Models\Loan;
 use App\Models\Payment;
 use App\Models\SmsLog;
+use App\Services\SmsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -52,7 +53,7 @@ class PaymentController extends Controller
         return view('admin.payments.create', compact('customers', 'selectedCustomerId', 'selectedCustomer'));
     }
 
-    public function store(Request $request)
+    public function store(Request $request, SmsService $smsService)
     {
         $validated = $request->validate([
             'customer_id' => 'required|exists:customers,id',
@@ -74,9 +75,10 @@ class PaymentController extends Controller
             return back()->with('error', 'No unpaid loans found for this customer.');
         }
 
-        DB::transaction(function () use ($validated, $loans, $customer) {
+        $sent = false;
+
+        DB::transaction(function () use ($validated, $loans, $customer, $smsService, &$sent) {
             $remaining = $validated['amount'];
-            $totalSmsMessage = "Payment received: {$validated['amount']}.";
 
             foreach ($loans as $loan) {
                 if ($remaining <= 0) break;
@@ -102,16 +104,23 @@ class PaymentController extends Controller
                 $remaining -= $applied;
             }
 
+            $remainingBalance = $customer->loans()->whereIn('status', ['pending', 'paying', 'overdue'])->sum('remaining_amount');
+            $recordedAt = now()->format('Y-m-d H:i');
+            $message = "Dear {$customer->full_name}, we have received your payment of TZS {$validated['amount']} on {$validated['payment_date']} at {$recordedAt}. Outstanding balance: TZS {$remainingBalance}. Thank you for your payment.";
+
+            $sent = $smsService->send($customer->phone, $message);
+
             SmsLog::create([
                 'customer_id' => $customer->id,
                 'phone' => $customer->phone,
-                'message' => $totalSmsMessage,
-                'status' => 'pending',
+                'message' => $message,
+                'status' => $sent ? 'sent' : 'failed',
+                'sent_at' => $sent ? now() : null,
             ]);
         });
 
         return redirect()->route('admin.payments.index')
-            ->with('success', 'Payment recorded successfully.');
+            ->with($sent ? 'success' : 'error', $sent ? 'Payment recorded and SMS sent.' : 'Payment recorded but SMS failed.');
     }
 
     public function show(Payment $payment)

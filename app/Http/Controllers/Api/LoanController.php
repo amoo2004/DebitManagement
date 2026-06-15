@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Loan;
 use App\Models\SmsLog;
+use App\Services\SmsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -39,16 +40,23 @@ class LoanController extends Controller
         $validated['created_by'] = $request->user()->id;
 
         $loan = DB::transaction(function () use ($validated) {
-            $loan = Loan::create($validated);
-            $customer = $loan->customer;
-            SmsLog::create([
-                'customer_id' => $customer->id,
-                'phone' => $customer->phone,
-                'message' => "You have received a loan of {$validated['loan_amount']}. Please repay before {$validated['due_date']} at " . ($validated['due_time'] ?? '23:59') . ".",
-                'status' => 'pending',
-            ]);
-            return $loan;
+            return Loan::create($validated);
         });
+
+        $customer = $loan->customer;
+        $dueTime = $validated['due_time'] ?? '23:59';
+        $message = "Dear {$customer->full_name}, your loan of TZS {$validated['loan_amount']} has been approved. Outstanding balance: TZS {$validated['remaining_amount']}. Please repay before {$validated['due_date']} at {$dueTime}. Thank you.";
+
+        $smsService = app(SmsService::class);
+        $sent = $smsService->send($customer->phone, $message);
+
+        SmsLog::create([
+            'customer_id' => $customer->id,
+            'phone' => $customer->phone,
+            'message' => $message,
+            'status' => $sent ? 'sent' : 'failed',
+            'sent_at' => $sent ? now() : null,
+        ]);
 
         return response()->json($loan->load('customer'), 201);
     }

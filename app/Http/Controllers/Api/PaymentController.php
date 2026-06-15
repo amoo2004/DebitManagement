@@ -5,6 +5,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Loan;
 use App\Models\Payment;
 use App\Models\SmsLog;
+use App\Services\SmsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -50,15 +51,24 @@ class PaymentController extends Controller
             $loan->save();
             $loan->updateStatus();
 
-            SmsLog::create([
-                'customer_id' => $loan->customer_id,
-                'phone' => $loan->customer->phone,
-                'message' => "Payment received: {$validated['amount']}. Remaining balance: {$loan->remaining_amount}.",
-                'status' => 'pending',
-            ]);
-
             return $payment;
         });
+
+        $customer = $loan->customer;
+        $remainingBalance = $customer->loans()->whereIn('status', ['pending', 'paying', 'overdue'])->sum('remaining_amount');
+        $recordedAt = now()->format('Y-m-d H:i');
+        $message = "Dear {$customer->full_name}, we have received your payment of TZS {$validated['amount']} on {$validated['payment_date']} at {$recordedAt}. Outstanding balance: TZS {$remainingBalance}. Thank you for your payment.";
+
+        $smsService = app(SmsService::class);
+        $sent = $smsService->send($customer->phone, $message);
+
+        SmsLog::create([
+            'customer_id' => $customer->id,
+            'phone' => $customer->phone,
+            'message' => $message,
+            'status' => $sent ? 'sent' : 'failed',
+            'sent_at' => $sent ? now() : null,
+        ]);
 
         return response()->json($payment->load('loan.customer'), 201);
     }

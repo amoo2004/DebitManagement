@@ -2,65 +2,92 @@
 namespace App\Services;
 
 use App\Models\SmsLog;
-use Twilio\Rest\Client;
-use AfricasTalking\SDK\AfricasTalking;
+use Illuminate\Support\Facades\Http;
 
 class SmsService
 {
-    protected $provider;
-    protected $twilioClient;
-    protected $africaClient;
-
-    public function __construct()
-    {
-        $this->provider = setting('sms_provider', 'twilio');
-
-        if ($this->provider === 'twilio') {
-            $sid = setting('twilio_sid');
-            $token = setting('twilio_token');
-            if ($sid && $token) {
-                $this->twilioClient = new Client($sid, $token);
-            }
-        } elseif ($this->provider === 'africastalking') {
-            $username = setting('africa_username');
-            $apiKey = setting('africa_api_key');
-            if ($username && $apiKey) {
-                $this->africaClient = new AfricasTalking($username, $apiKey);
-            }
-        }
-    }
-
     public function send($phone, $message)
     {
         try {
-            if ($this->provider === 'twilio' && $this->twilioClient) {
-                $from = setting('twilio_from');
-                $this->twilioClient->messages->create($phone, [
-                    'from' => $from,
-                    'body' => $message,
-                ]);
-            } elseif ($this->provider === 'africastalking' && $this->africaClient) {
-                $sms = $this->africaClient->sms();
-                $sms->send([
-                    'to' => $phone,
-                    'message' => $message,
-                ]);
+            $apiKey = setting('meseji_api_key');
+            $senderId = setting('meseji_sender_id');
+
+            if (empty($apiKey)) {
+                throw new \Exception('Meseji API key is not configured.');
             }
 
-            SmsLog::where('phone', $phone)
-                ->where('message', $message)
-                ->where('status', 'pending')
-                ->update(['status' => 'sent', 'sent_at' => now()]);
+            if (empty($senderId)) {
+                throw new \Exception('Meseji sender ID is not configured. Register one in your meseji account first.');
+            }
 
-            return true;
+            if (empty($phone)) {
+                throw new \Exception('Phone number is empty.');
+            }
+
+            $phone = $this->formatPhone($phone);
+
+            \Log::info('Sending SMS via Meseji', [
+                'phone' => $phone,
+                'sender_id' => $senderId,
+            ]);
+
+            $response = Http::withHeaders([
+                'X-API-Key' => $apiKey,
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json',
+            ])->timeout(30)->post('https://meseji.co.tz/api/v1/sms/send', [
+                'contacts' => $phone,
+                'message' => $message,
+                'sender_id' => $senderId,
+            ]);
+
+            \Log::info('Meseji API response', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+
+            if ($response->successful()) {
+                SmsLog::where('phone', $phone)
+                    ->where('message', $message)
+                    ->where('status', 'pending')
+                    ->update(['status' => 'sent', 'sent_at' => now()]);
+
+                return true;
+            }
+
+            $errorBody = $response->body();
+            $statusCode = $response->status();
+
+            if ($statusCode === 401) {
+                throw new \Exception('Meseji authentication failed. Check your API key.');
+            }
+
+            throw new \Exception("Meseji API error ({$statusCode}): {$errorBody}");
+
         } catch (\Exception $e) {
+            \Log::error('SMS sending failed: ' . $e->getMessage());
+
             SmsLog::where('phone', $phone)
                 ->where('message', $message)
                 ->where('status', 'pending')
                 ->update(['status' => 'failed']);
 
-            \Log::error('SMS sending failed: ' . $e->getMessage());
             return false;
         }
+    }
+
+    private function formatPhone($phone)
+    {
+        $phone = preg_replace('/[^0-9]/', '', $phone);
+
+        if (strlen($phone) === 9) {
+            $phone = '255' . $phone;
+        } elseif (strlen($phone) === 10 && substr($phone, 0, 1) === '0') {
+            $phone = '255' . substr($phone, 1);
+        } elseif (strlen($phone) === 13 && substr($phone, 0, 1) === '+') {
+            $phone = substr($phone, 1);
+        }
+
+        return $phone;
     }
 }

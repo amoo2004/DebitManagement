@@ -36,6 +36,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
 
     Route::get('settings/sms', [SettingsController::class, 'smsSettings'])->name('settings.sms');
     Route::post('settings/sms', [SettingsController::class, 'updateSmsSettings'])->name('settings.sms.update');
+    Route::post('settings/sms/test', [SettingsController::class, 'testSms'])->name('settings.sms.test');
     Route::get('settings/users', [SettingsController::class, 'users'])->name('settings.users');
     Route::post('settings/users', [SettingsController::class, 'createUser'])->name('settings.users.create');
     Route::put('settings/users/{user}', [SettingsController::class, 'updateUser'])->name('settings.users.update');

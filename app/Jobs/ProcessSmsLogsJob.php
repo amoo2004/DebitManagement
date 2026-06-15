@@ -3,15 +3,12 @@ namespace App\Jobs;
 
 use App\Models\SmsLog;
 use App\Services\SmsService;
-use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Bus\Batchable;
 use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Foundation\Queue\Queueable;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Queue\SerializesModels;
 
-class ProcessSmsLogsJob implements ShouldQueue
+class ProcessSmsLogsJob
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable, Batchable;
 
     public function handle(SmsService $smsService): void
     {

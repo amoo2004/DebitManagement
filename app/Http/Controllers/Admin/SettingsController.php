@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\Notification;
+use App\Services\SmsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
@@ -18,12 +19,8 @@ class SettingsController extends Controller
     public function updateSmsSettings(Request $request)
     {
         $validated = $request->validate([
-            'sms_provider' => 'required|in:twilio,africastalking',
-            'twilio_sid' => 'nullable|string',
-            'twilio_token' => 'nullable|string',
-            'twilio_from' => 'nullable|string',
-            'africa_api_key' => 'nullable|string',
-            'africa_username' => 'nullable|string',
+            'meseji_api_key' => 'required|string',
+            'meseji_sender_id' => 'required|string|max:11',
         ]);
 
         foreach ($validated as $key => $value) {
@@ -34,6 +31,23 @@ class SettingsController extends Controller
         setting()->save();
 
         return back()->with('success', 'SMS settings updated successfully.');
+    }
+
+    public function testSms(Request $request, SmsService $smsService)
+    {
+        $request->validate([
+            'test_phone' => 'required|string|max:20',
+        ]);
+
+        $phone = $request->test_phone;
+
+        $sent = $smsService->send($phone, 'Test SMS from Debit Management System - ' . now()->format('Y-m-d H:i:s'));
+
+        if ($sent) {
+            return back()->with('success', 'Test SMS sent successfully to ' . $phone);
+        }
+
+        return back()->with('error', 'Test SMS failed. Check the log file for details.');
     }
 
     public function users()
