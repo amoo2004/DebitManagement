@@ -35,7 +35,7 @@ class DashboardController extends Controller
             $date = Carbon::now()->subDays($i);
             $chartData[] = [
                 'day' => $date->format('j'),
-                'collections' => Payment::whereDate('payment_date', $date->toDateString())->sum('amount'),
+                'debt' => Loan::whereDate('loan_date', $date->toDateString())->sum('remaining_amount'),
             ];
         }
 

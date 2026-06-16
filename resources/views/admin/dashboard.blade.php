@@ -35,9 +35,9 @@
 <div class="row">
     <div class="col-lg-12">
         <div class="card">
-            <div class="card-header"><h2 class="card-title">Monthly Collections</h2></div>
+            <div class="card-header"><h2 class="card-title">Monthly Debt</h2></div>
             <div class="card-body">
-                <canvas id="collectionsChart" style="min-height:250px;height:250px;max-height:250px;max-width:100%"></canvas>
+                <canvas id="debtChart" style="min-height:250px;height:250px;max-height:250px;max-width:100%"></canvas>
             </div>
         </div>
     </div>
@@ -91,16 +91,16 @@
 
 @push('scripts')
 <script>
-const ctx = document.getElementById('collectionsChart').getContext('2d');
+const ctx = document.getElementById('debtChart').getContext('2d');
 new Chart(ctx, {
     type: 'line',
     data: {
         labels: {!! json_encode(array_column($chartData, 'day')) !!},
         datasets: [{
-            label: 'Collections',
-            data: {!! json_encode(array_column($chartData, 'collections')) !!},
-            borderColor: '#007bff',
-            backgroundColor: 'rgba(0,123,255,0.1)',
+            label: 'Debt',
+            data: {!! json_encode(array_column($chartData, 'debt')) !!},
+            borderColor: '#dc3545',
+            backgroundColor: 'rgba(220,53,69,0.1)',
             fill: true,
             tension: 0.4
         }]
